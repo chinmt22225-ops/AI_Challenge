@@ -1,0 +1,61 @@
+"Bạn là một chuyên gia lập trình AI Game. Hãy viết mã nguồn cho một Agent thông minh chơi game Đặt Bom (Bomberman) bằng ngôn ngữ [Điền ngôn ngữ: Python/C++...]. Agent của bạn sẽ sử dụng thuật toán Cắt tỉa Alpha-Beta (Alpha-Beta Pruning).
+
+Dưới đây là toàn bộ luật chơi, cơ chế và hướng dẫn tư duy chiến thuật để bạn xây dựng hệ thống:
+
+1. Luật chơi và Di chuyển cơ bản
+Mục tiêu: Trở thành người sống sót cuối cùng hoặc sống sót sau 500 steps (lượt).
+
+Hành động hợp lệ: Đi UP, DOWN, LEFT, RIGHT, đứng im, hoặc đặt BOMB.
+
+Vật cản: Không thể đi xuyên qua Tường (mã 1) và Hộp gỗ (mã 2).
+
+Va chạm: Nhiều Agent có thể đứng chung trên 1 ô. Agent không thể đi vào ô đã có bom từ step trước. Ngoại lệ: Nếu Agent vừa đặt bom tại vị trí của mình, nó vẫn có quyền di chuyển ra khỏi ô đó ở step tiếp theo.
+
+Sinh tử: Agent bị loại ngay lập tức nếu chạm phải vụ nổ (kể cả vụ nổ từ bom của chính mình).
+
+2. Cơ chế Bom và Vụ nổ
+Chỉ số cơ bản: Mỗi Agent bắt đầu với Bán kính nổ (Radius) = 1 và Số lượng bom (Capacity) = 1. Tối đa là 5 cho mỗi loại.
+
+Quy tắc đặt bom: Agent chỉ đặt được bom khi bombs_left > 0 và ô hiện tại chưa có bom.
+
+Xung đột đặt bom: Nếu nhiều Agent cùng đặt bom vào 1 ô cùng lúc: Ưu tiên bom của người có Bán kính nổ (Radius) lớn hơn. Nếu Radius bằng nhau, ưu tiên Agent có ID nhỏ hơn. Chỉ Agent đặt thành công mới bị trừ bombs_left.
+
+Cơ chế nổ (Timer 7 steps): Vụ nổ lan theo 4 hướng (chữ thập).
+
+Tường: Chặn vụ nổ hoàn toàn.
+
+Hộp gỗ: Chặn vụ nổ nhưng Hộp sẽ bị phá vỡ.
+
+Agent: Không chặn được vụ nổ (bị xuyên qua).
+
+Phản ứng dây chuyền: Nếu tia lửa chạm vào một quả bom khác, quả bom đó sẽ phát nổ ngay lập tức.
+
+3. Cơ chế Vật phẩm (Items)
+Vật phẩm mang lại lợi thế chiến thuật lớn, Agent cần ưu tiên nhặt nhưng phải đảm bảo an toàn. Nếu có từ 2 Agent trở lên cùng bước vào một ô chứa vật phẩm, vật phẩm sẽ bị dẫm nát (hủy bỏ).
+
+Item Radius (Tăng bán kính nổ): Giúp tia lửa lan dài hơn (tối đa 5 ô), cực kỳ hữu ích để ép góc, chặn đường thoát của đối thủ hoặc phá nhiều hộp cùng lúc.
+
+Item Capacity (Tăng số lượng bom): Cho phép Agent đặt nhiều bom cùng lúc trên bản đồ (tối đa 5 quả). Dùng để tạo ra các bãi mìn hoặc chuỗi nổ dây chuyền phức tạp khiến đối thủ không kịp né.
+
+Tỷ lệ xuất hiện:
+
+Phá hộp: 30% rơi Item Radius, 30% rơi Item Capacity, 40% không rơi gì.
+
+Tự sinh ra (Auto-spawn): Mỗi ô cỏ trống có xác suất P tự xuất hiện vật phẩm mỗi step (50% Radius, 50% Capacity).
+
+4. Thuật toán Cắt tỉa Alpha-Beta và Định vị (Quan trọng)
+Khung thuật toán: Cài đặt hàm alpha_beta(state, depth, alpha, beta, maximizing_player). Sử dụng kỹ thuật cắt tỉa để loại bỏ ngay những nhánh hành động chắc chắn làm Agent bị loại (ví dụ: đâm đầu vào ô sắp nổ).
+
+Thuật toán Dò đường BFS (Breadth-First Search): TUYỆT ĐỐI KHÔNG dùng khoảng cách tuyến tính (đường chim bay) để tìm đối thủ hay vật phẩm, vì sẽ bị lỗi đâm vào tường. Hãy viết hàm BFS hoạt động như một "vết dầu loang":
+
+Loang từ vị trí của Agent ra xung quanh (né Tường và Bom) để tìm vật phẩm hoặc đối thủ gần nhất.
+
+Số bước loang chính là khoảng cách thực tế. Dùng quỹ đạo này để Agent biết phải đi hướng nào.
+
+Hàm lượng giá (Evaluation Function): Chấm điểm trạng thái game:
+
+Kiến thức cứng (Ưu tiên tuyệt đối): Nếu vừa đặt bom, điểm số của hành động "di chuyển ra khỏi bom" phải cao nhất. Trừ điểm vô cực nếu bước vào tầm nổ không có đường thoát.
+
+Chiến thuật: Điểm cộng tỷ lệ nghịch với số bước đi (tính bằng BFS) tới vật phẩm hoặc đối thủ gần nhất. Ưu tiên nhặt Item khi các chỉ số chưa đạt tối đa (5).
+
+Hãy cấu trúc code theo hướng Lập trình Hướng đối tượng (OOP), chia rõ class GameState, hàm Evaluation và logic Alpha-Beta kèm comment giải thích để tôi dễ dàng tùy biến."
